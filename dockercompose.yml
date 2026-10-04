@@ -1,0 +1,83 @@
+services:
+
+  # =========================
+  # Backend
+  # =========================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: todo-backend
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/tododb
+      SPRING_DATASOURCE_USERNAME: todo
+      SPRING_DATASOURCE_PASSWORD: todo123
+
+    depends_on:
+      database:
+        condition: service_healthy
+
+    networks:
+      - todo-network
+
+
+  # =========================
+  # Frontend
+  # =========================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: todo-frontend
+
+    ports:
+      - "3000:80"
+
+    depends_on:
+      - backend
+
+    networks:
+      - todo-network
+
+
+  # =========================
+  # PostgreSQL
+  # =========================
+  database:
+    image: postgres:16-alpine
+    container_name: todo-database
+
+    environment:
+      POSTGRES_DB: tododb
+      POSTGRES_USER: todo
+      POSTGRES_PASSWORD: todo123
+
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U todo -d tododb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - todo-network
+
+
+# =========================
+# Network
+# =========================
+networks:
+  todo-network:
+
+
+# =========================
+# Persistent storage
+# =========================
+volumes:
+  postgres-data:
